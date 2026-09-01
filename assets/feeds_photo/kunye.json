@@ -29,24 +29,6 @@
   "license": "CC BY-SA 2.0",
   "page": "https://commons.wikimedia.org/wiki/File:Sweet_Vernal-grass_flowering_in_a_hay_meadow_-_geograph.org.uk_-_1869558.jpg"
  },
- "misir_hasili": {
-  "title": "Forage maize - geograph.org.uk - 4211168.jpg",
-  "author": "Richard Webb",
-  "license": "CC BY-SA 2.0",
-  "page": "https://commons.wikimedia.org/wiki/File:Forage_maize_-_geograph.org.uk_-_4211168.jpg"
- },
- "cavdar_hasili": {
-  "title": "LPCC-583-Camp de sègol.jpg",
-  "author": "Miquel Pujol Palol",
-  "license": "CC BY-SA 3.0",
-  "page": "https://commons.wikimedia.org/wiki/File:LPCC-583-Camp_de_s%C3%A8gol.jpg"
- },
- "yulaf_hasili": {
-  "title": "LPCC-529-Camp de civada.jpg",
-  "author": "Miquel Pujol Palol",
-  "license": "CC BY-SA 3.0",
-  "page": "https://commons.wikimedia.org/wiki/File:LPCC-529-Camp_de_civada.jpg"
- },
  "misir_silaji": {
   "title": "LPCC-908-Ensitjant blat de moro.jpg",
   "author": "Miquel Pujol Palol",
@@ -136,5 +118,23 @@
   "author": "Phu Thinh Co",
   "license": "CC BY-SA 2.0",
   "page": "https://commons.wikimedia.org/wiki/File:Fishmeal_powder.jpg"
+ },
+ "sorgum": {
+  "title": "Espigues sorgo CP2.JPG",
+  "author": "bilinmiyor (bkz. dosya sayfası)",
+  "license": "CC BY-SA 3.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Espigues_sorgo_CP2.JPG"
+ },
+ "italyan_cimi": {
+  "title": "Lolium multiflorum, Santa Coloma de Farners.jpg",
+  "author": "Josep Gesti",
+  "license": "CC BY-SA 4.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Lolium_multiflorum,_Santa_Coloma_de_Farners.jpg"
+ },
+ "tas_yoncasi": {
+  "title": "Melilotus officinalis - yellow sweetclover - 1.jpg",
+  "author": "Matt Lavin",
+  "license": "CC BY-SA 2.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Melilotus_officinalis_-_yellow_sweetclover_-_1.jpg"
  }
 }
