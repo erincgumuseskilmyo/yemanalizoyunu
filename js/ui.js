@@ -1,5 +1,6 @@
 // ui.js — Arayüz katmanı: sorular, sürükle-bırak, envanter, cihaz pencereleri
-import { getFeedImage, shuffle } from './feeds.js';
+import { getFeedPhoto, shuffle } from './feeds.js';
+import { TEST_MODE } from './system.js';
 import { Audio } from './audio.js';
 
 const $ = id => document.getElementById(id);
@@ -142,6 +143,8 @@ export const UI = {
     $('btn-eq-close').addEventListener('click', () => this.closeEquipment());
     $('btn-notebook-close').addEventListener('click', () => this.closeNotebook());
     $('btn-notebook').addEventListener('click', () => this.showNotebook());
+    $('btn-guide').addEventListener('click', () => this.showGuide());
+    $('btn-guide-close').addEventListener('click', () => this.closeGuide());
     $('btn-cancel-result').addEventListener('click', () => this._closeResult());
     $('btn-restart').addEventListener('click', () => location.reload());
 
@@ -216,12 +219,41 @@ export const UI = {
     setTimeout(() => el.remove(), ms);
   },
 
+  // ------------------------------------------------------- Test modu
+  /**
+   * Test modunda soruların altına "GEÇ" düğmelerini ekler.
+   * `onSkip` tek soruyu, `onSkipAll` kalan bütün soruları atlar.
+   * TEST_MODE kapalıyken hiçbir şey eklemez.
+   */
+  addSkipButtons(container, onSkip, onSkipAll) {
+    if (!TEST_MODE || !onSkip) return;
+
+    const bar = document.createElement('div');
+    bar.className = 'skip-bar';
+    bar.innerHTML = '<span>test modu</span>';
+
+    const tek = document.createElement('button');
+    tek.className = 'btn-skip';
+    tek.textContent = 'BU SORUYU GEÇ';
+    tek.onclick = () => onSkip();
+    bar.appendChild(tek);
+
+    if (onSkipAll) {
+      const hepsi = document.createElement('button');
+      hepsi.className = 'btn-skip';
+      hepsi.textContent = 'TÜM SORULARI GEÇ';
+      hepsi.onclick = () => onSkipAll();
+      bar.appendChild(hepsi);
+    }
+    container.appendChild(bar);
+  },
+
   // ---------------------------------------------------------- Sorular
   /**
    * `image` = { src, photo } — photo:true ise gerçek fotoğraf olarak
    * (pikselleştirmeden) gösterilir.
    */
-  showQuestion(title, text, options, onAnswer, image = null) {
+  showQuestion(title, text, options, onAnswer, image = null, skip = null) {
     $('q-title').textContent = title;
     $('q-text').textContent = text;
 
@@ -231,7 +263,7 @@ export const UI = {
     if (image && image.src) {
       const img = document.createElement('img');
       img.id = 'q-feed-image';
-      img.className = 'question-feed-image' + (image.photo ? ' is-photo' : '');
+      img.className = 'question-feed-image';
       img.alt = 'Yem numunesi';
       img.src = image.src;
       img.onerror = () => {
@@ -259,18 +291,24 @@ export const UI = {
       box.appendChild(b);
     });
 
+    if (skip) {
+      this.addSkipButtons(box,
+        () => { if (answered) return; answered = true; this.closeQuestion(); skip.one(); },
+        skip.all && (() => { if (answered) return; answered = true; this.closeQuestion(); skip.all(); }));
+    }
+
     $('modal-question').classList.remove('hidden');
     $('modal-question').classList.add('active');
     Audio.play('question');
   },
 
   /** Görsel eşleştirme: PNG kartlarını doğru yem adına taşı. */
-  showImageMatching(feeds, onDone) {
+  showImageMatching(feeds, onDone, skip = null) {
     DnD.reset();
     const modal = $('modal-question');
-    $('q-title').textContent = '3. YEM GÖRSELİ EŞLEŞTİRME';
+    $('q-title').textContent = '3. YEM FOTOĞRAFI EŞLEŞTİRME';
     $('q-text').textContent =
-      'Yem görsellerini doğru yem adına taşıyın. Kartı sürükleyebilir ya da ' +
+      'Yem fotoğraflarını doğru yem adına taşıyın. Kartı sürükleyebilir ya da ' +
       'önce karta, sonra ada dokunabilirsiniz. Her doğru eşleşme 2 puandır.';
 
     const old = $('q-feed-image');
@@ -292,7 +330,7 @@ export const UI = {
       const card = document.createElement('div');
       card.className = 'match-image-card';
       card.dataset.feedId = feed.id;
-      card.innerHTML = `<img src="${getFeedImage(feed)}" alt="Yem görseli"><span>Taşı</span>`;
+      card.innerHTML = `<img src="${getFeedPhoto(feed)}" alt="Yem fotoğrafı"><span>Taşı</span>`;
       DnD.makeSource(card, feed.id);
       images.appendChild(card);
     });
@@ -301,14 +339,14 @@ export const UI = {
       const zone = document.createElement('div');
       zone.className = 'match-name-zone';
       zone.dataset.feedId = feed.id;
-      zone.innerHTML = `<span>${feed.name}</span><small>görseli buraya bırak</small>`;
+      zone.innerHTML = `<span>${feed.name}</span><small>fotoğrafı buraya bırak</small>`;
       DnD.makeTarget(zone, (feedId, cardEl) => {
         if (zone.dataset.locked === 'true') return;
         if (String(feedId) === zone.dataset.feedId) {
           zone.dataset.locked = 'true';
           zone.classList.add('correct');
           zone.innerHTML =
-            `<img src="${getFeedImage(feed)}" alt=""><span>${feed.name} ✓</span>`;
+            `<img src="${getFeedPhoto(feed)}" alt=""><span>${feed.name} ✓</span>`;
           cardEl.remove();
           correct++;
           Audio.play('correct');
@@ -337,6 +375,20 @@ export const UI = {
     };
     box.appendChild(done);
 
+    if (skip) {
+      // innerHTML de temizlenir; yoksa atlanan eşleştirmenin "GEÇ" çubuğu
+      // gizli pencerede asılı kalır.
+      const bitir = () => {
+        DnD.reset();
+        this.closeQuestion();
+        box.className = 'options';
+        box.innerHTML = '';
+      };
+      this.addSkipButtons(box,
+        () => { bitir(); skip.one(); },
+        skip.all && (() => { bitir(); skip.all(); }));
+    }
+
     modal.classList.remove('hidden');
     modal.classList.add('active');
     Audio.play('question');
@@ -348,7 +400,7 @@ export const UI = {
   },
 
   // ---------------------------------------------------------- Gruplandırma
-  showGrouping(feeds, onDone) {
+  showGrouping(feeds, onDone, skip = null) {
     DnD.reset();
     const source = $('feed-cards');
     source.innerHTML = '';
@@ -387,13 +439,25 @@ export const UI = {
     $('screen-grouping').classList.remove('hidden');
     $('screen-grouping').classList.add('active');
 
-    $('btn-group-done').onclick = () => {
-      Audio.play('click');
+    const kapat = () => {
       DnD.reset();
       $('screen-grouping').classList.remove('active');
       $('screen-grouping').classList.add('hidden');
+    };
+
+    $('btn-group-done').onclick = () => {
+      Audio.play('click');
+      kapat();
       onDone(correct, wrongTries);
     };
+
+    const eskiBar = document.querySelector('#screen-grouping .skip-bar');
+    if (eskiBar) eskiBar.remove();
+    if (skip) {
+      this.addSkipButtons($('btn-group-done').parentElement,
+        () => { kapat(); skip.one(); },
+        skip.all && (() => { kapat(); skip.all(); }));
+    }
   },
 
   // ---------------------------------------------------------- Cihaz penceresi
@@ -529,6 +593,29 @@ export const UI = {
     el.classList.remove('hidden');
   },
 
+  // ---------------------------------------------------------- Rehber
+  /**
+   * Laboratuvar sorumlusunun tanıtım penceresi. Kontrolleri ve kabaca ne
+   * yapılacağını söyler; **nasıl yapılacağını** bilerek anlatmaz — sıcaklık,
+   * süre, elek çapı ve işlem sırası öğrencinin bilmesi gereken şeylerdir.
+   * Laboratuvara girilince bir kez kendiliğinden açılır, sonra HUD'daki
+   * REHBER düğmesiyle istenildiği kadar tekrar açılabilir.
+   */
+  showGuide() {
+    $('btn-guide').classList.remove('hidden');
+    $('modal-guide').classList.remove('hidden');
+    $('modal-guide').classList.add('active');
+    Audio.play('open');
+  },
+
+  closeGuide() {
+    const m = $('modal-guide');
+    if (!m.classList.contains('active')) return;
+    m.classList.remove('active');
+    m.classList.add('hidden');
+    Audio.play('close');
+  },
+
   // ---------------------------------------------------------- Defter
   showNotebook(html) {
     if (html !== undefined) this._notebookHtml = html;
@@ -630,8 +717,41 @@ export const UI = {
       }
       setTimeout(() => { btn.textContent = 'SONUÇ ÖZETİNİ KOPYALA'; }, 2200);
     };
+    this.setSendStatus({ state: 'idle' });
     this.renderPhotoCredits();
     Audio.stopLoop('ambience');
     Audio.play('success');
+  },
+
+  /**
+   * Sonuç ekranındaki "öğretmene iletim" satırı.
+   * Durum dürüstçe yazılır: doğrulanamayan gönderim başarılı gibi
+   * gösterilmez, başarısızlıkta tekrar deneme düğmesi çıkar.
+   */
+  setSendStatus({ state, detail = '', onRetry = null }) {
+    const box = $('send-status');
+    if (!box) return;
+    const texts = {
+      idle:       ['', ''],
+      sending:    ['wait', 'Sonuç öğretim elemanına gönderiliyor…'],
+      sent:       ['ok', '✓ Sonucunuz öğretim elemanına iletildi.'],
+      unverified: ['warn', '⚠ Sonuç gönderildi, ancak tarayıcı iletimi doğrulayamadı. ' +
+                           'Özeti kopyalayıp öğretim elemanınıza da iletin.'],
+      off:        ['warn', 'Otomatik iletim tanımlı değil. Sonuç özetini kopyalayıp ' +
+                           'öğretim elemanınıza gönderin.'],
+      fail:       ['err', 'Sonuç gönderilemedi. İnternet bağlantınızı kontrol edip ' +
+                          'tekrar deneyin veya özeti kopyalayıp iletin.']
+    };
+    const [cls, msg] = texts[state] || texts.idle;
+    box.className = 'send-status ' + cls;
+    if (!msg) { box.innerHTML = ''; return; }
+    box.innerHTML = `<span>${msg}${detail ? ` <i class="dim">(${detail})</i>` : ''}</span>`;
+    if (onRetry) {
+      const btn = document.createElement('button');
+      btn.className = 'btn-secondary btn-retry';
+      btn.textContent = 'TEKRAR GÖNDER';
+      btn.onclick = () => onRetry();
+      box.appendChild(btn);
+    }
   }
 };

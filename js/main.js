@@ -4,10 +4,19 @@ import { Game } from './game.js';
 import { Intro } from './intro.js';
 import { setJoystick } from './player.js';
 import { Audio } from './audio.js';
+import { verifyFeedPhotos } from './feeds.js';
+
+// Yem fotoğrafları önden yüklenir; dosyası bulunmayan yemler soru
+// havuzundan düşer. İş giriş ekranı ve anlatı sürerken bittiği için
+// oyunun başlamasını geciktirmez.
+const fotograflarHazir = verifyFeedPhotos();
 
 // Giriş → açılış anlatısı → oyun. Süre sayacı anlatı bittikten sonra
 // başlar; hikâye öğrencinin 30 dakikasından yemez.
-UI.initLogin(data => Intro.show(() => Game.start(data)));
+UI.initLogin(data => Intro.show(async () => {
+  await fotograflarHazir;
+  Game.start(data);
+}));
 
 /* ----------------------------------------------------- Mobil yön çubuğu */
 const joyArea = document.getElementById('joystick-area');
@@ -65,5 +74,6 @@ window.addEventListener('keydown', e => {
   if (e.code === 'Escape') {
     UI.closeEquipment();
     UI.closeNotebook();
+    UI.closeGuide();
   }
 });

@@ -538,44 +538,33 @@ canvas { display: block; width: 100%; height: 100%; }
 .hidden { display: none !important; }
 
 /* ===================================================== YEM GÖRSELİ ===== */
+/* Yem tanıma sorusu gerçek fotoğrafla sorulur; pikselleştirme uygulanmaz. */
 .question-feed-image {
   display: block;
-  width: min(420px, 100%); height: 210px;
-  object-fit: contain;
-  image-rendering: pixelated;
+  width: min(460px, 100%); height: 300px;
+  object-fit: cover;
   background: #070b18;
-  border: 2px solid var(--good);
+  border: 2px solid var(--line-2);
   border-radius: 10px;
   margin: 4px auto 16px;
-  padding: 8px;
 }
 .question-feed-image.image-error { opacity: .45; }
-
-/* Yem tanıma sorusundaki gerçek fotoğraf: pikselleştirme uygulanmaz,
-   çerçeveyi tamamen doldurur. */
-.question-feed-image.is-photo {
-  image-rendering: auto;
-  width: min(460px, 100%);
-  height: 300px;
-  object-fit: cover;
-  padding: 0;
-  border-color: var(--line-2);
-}
 @media (max-width: 760px) {
-  .question-feed-image.is-photo { height: 230px; }
+  .question-feed-image { height: 230px; }
 }
 
 /* ===================================================== GÖRSEL EŞLEŞTİRME ===== */
 .image-match-game { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .match-images, .match-names { display: flex; flex-direction: column; gap: 10px; }
 .match-image-card {
-  display: grid; grid-template-columns: 84px 1fr; align-items: center; gap: 10px;
+  display: grid; grid-template-columns: 116px 1fr; align-items: center; gap: 10px;
   padding: 8px; background: var(--line);
   border: 2px solid var(--line-2); border-radius: 8px;
 }
+/* Gercek fotograf: kirpilarak kutuyu doldurur, yumusak olceklenir. */
 .match-image-card img {
-  width: 78px; height: 62px; object-fit: contain;
-  image-rendering: pixelated; background: #070b18; border-radius: 5px;
+  width: 110px; height: 80px; object-fit: cover;
+  background: #070b18; border-radius: 5px;
 }
 .match-image-card span { color: var(--muted); font-size: 10.5px; }
 
@@ -591,7 +580,7 @@ canvas { display: block; width: 100%; height: 100%; }
 .match-name-zone.drag-over { background: #14313a; transform: scale(1.02); }
 .match-name-zone.correct { border-style: solid; background: rgba(78, 204, 163, .14); }
 .match-name-zone.wrong { border-color: var(--accent); background: rgba(233, 69, 96, .13); }
-.match-name-zone img { width: 56px; height: 40px; object-fit: contain; image-rendering: pixelated; }
+.match-name-zone img { width: 76px; height: 54px; object-fit: cover; border-radius: 4px; }
 .match-done { margin-top: 14px; grid-column: 1 / -1; }
 
 /* ===================================================== KÜÇÜK EKRAN ===== */
@@ -619,4 +608,154 @@ canvas { display: block; width: 100%; height: 100%; }
   .eq-row label { min-width: 100%; }
   .eq-figure img { max-height: 140px; }
   .eq-gallery .eq-figure img { max-height: 120px; }
+}
+
+/* ---- Sonuç ekranı: kesinti listesi, hata listesi, iletim durumu ---- */
+#final-details .final-sec {
+  margin: 18px 0 6px;
+  font-size: .74rem;
+  letter-spacing: .06em;
+  color: var(--accent);
+  border-bottom: 1px solid rgba(255,255,255,.14);
+  padding-bottom: 5px;
+}
+#final-details .dim { opacity: .65; font-style: normal; font-size: .9em; }
+.deduction-rows .row.total {
+  border-top: 1px solid rgba(255,255,255,.18);
+  margin-top: 4px;
+  font-weight: 700;
+}
+.err-list-open {
+  margin: 4px 0 0;
+  padding-left: 20px;
+  font-size: .82rem;
+  line-height: 1.5;
+  max-height: 34vh;
+  overflow-y: auto;
+}
+.err-list-open li { margin-bottom: 5px; }
+.err-list-open .err-time {
+  display: inline-block;
+  min-width: 46px;
+  opacity: .6;
+  font-variant-numeric: tabular-nums;
+}
+.send-status {
+  margin: 14px 0 4px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: .82rem;
+  line-height: 1.45;
+  display: none;
+}
+.send-status.wait,
+.send-status.ok,
+.send-status.warn,
+.send-status.err { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.send-status.wait { background: rgba(255,255,255,.07); }
+.send-status.ok   { background: rgba(76,175,80,.16);  color: #a8e6ab; }
+.send-status.warn { background: rgba(255,193,7,.15);  color: #f0d38a; }
+.send-status.err  { background: rgba(244,67,54,.16);  color: #f3a9a2; }
+.send-status .btn-retry { margin: 0; padding: 6px 12px; font-size: .7rem; width: auto; }
+
+/* ---- Test modu: soruları geçme çubuğu (öğrenci sürümünde görünmez) ---- */
+.skip-bar {
+  grid-column: 1 / -1;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(255,255,255,.18);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.skip-bar > span {
+  font-size: .62rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #f0d38a;
+  background: rgba(255,193,7,.15);
+  border-radius: 4px;
+  padding: 3px 7px;
+}
+.btn-skip {
+  font-family: inherit;
+  font-size: .62rem;
+  letter-spacing: .05em;
+  padding: 7px 12px;
+  color: #cfd6ea;
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 6px;
+  cursor: pointer;
+  width: auto;
+}
+.btn-skip:hover { background: rgba(255,255,255,.14); color: #fff; }
+
+/* ===================================================== REHBER ===== */
+/* Laboratuvar sorumlusu: solda figür, sağda anlatım. */
+.guide-box {
+  max-width: 760px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: "figur metin" "dugme dugme";
+  gap: 0 20px;
+  align-items: end;
+}
+#guide-figure {
+  grid-area: figur;
+  width: 168px;
+  height: auto;
+  align-self: end;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,.45));
+}
+#guide-text { grid-area: metin; align-self: start; }
+/* Görsel yüklenemeyip kaldırıldığında metin boş sütun bırakmaz. */
+.guide-box:not(:has(#guide-figure)) {
+  grid-template-columns: 1fr;
+  grid-template-areas: "metin" "dugme";
+}
+#guide-text h3 { margin: 0 0 8px; }
+#guide-text h4 {
+  margin: 14px 0 5px;
+  font-size: .72rem;
+  letter-spacing: .06em;
+  color: var(--accent);
+}
+.guide-lead { margin: 0; font-size: .88rem; line-height: 1.5; }
+.guide-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: .82rem;
+  line-height: 1.55;
+}
+.guide-list li { margin-bottom: 3px; }
+.guide-dim { opacity: .65; }
+.guide-note {
+  margin: 12px 0 0;
+  font-size: .8rem;
+  opacity: .8;
+}
+.guide-warn {
+  margin: 12px 0 0;
+  padding: 9px 11px;
+  font-size: .8rem;
+  line-height: 1.5;
+  color: #f0d38a;
+  background: rgba(255,193,7,.13);
+  border-left: 3px solid rgba(255,193,7,.55);
+  border-radius: 5px;
+}
+#btn-guide-close { grid-area: dugme; margin-top: 18px; }
+
+@media (max-width: 760px) {
+  .guide-box {
+    grid-template-columns: 1fr;
+    grid-template-areas: "figur" "metin" "dugme";
+    justify-items: center;
+    gap: 0;
+  }
+  /* Telefonda figür dikeyde çok yer kaplamasın; metin öne çıksın. */
+  #guide-figure { width: 82px; margin-bottom: 6px; }
+  #guide-text { justify-self: stretch; }
 }

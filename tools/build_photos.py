@@ -14,15 +14,14 @@ W, H = 800, 600
 
 # yem anahtari -> Commons dosya adi (File: oneki olmadan)
 PICKS = {
-    # --- kaba yemler: bitki / yigin fotograflari ---
+    # --- kaba yemler: bitki / numune fotograflari ---
     "yonca":            "Medicago sativa (4656243403).jpg",
     "korunga":          "Onobrychis viciifolia Inflorescence 11April2009 CampoCalatrava.jpg",
     "ucgul":            "Trifolium pratense - Keila.jpg",
     "fig":              "Vicia sativa kz01.jpg",
     "cayir_mera_otu":   "Sweet Vernal-grass flowering in a hay meadow - geograph.org.uk - 1869558.jpg",
-    "misir_hasili":     "Forage maize - geograph.org.uk - 4211168.jpg",
-    "cavdar_hasili":    "LPCC-583-Camp de sègol.jpg",
-    "yulaf_hasili":     "LPCC-529-Camp de civada.jpg",
+    "sorgum":           "Espigues sorgo CP2.JPG",
+    "seker_pancari":    "Beta vulgaris subsp. vulgaris (beets).jpg",
     "misir_silaji":     "LPCC-908-Ensitjant blat de moro.jpg",
     "saman":            "LPCC-588-Palla de sègol.jpg",
     # --- tane yemler: laboratuvar numunesi fotograflari ---
@@ -31,16 +30,20 @@ PICKS = {
     "yulaf":            "LPCC-511-Grans de civada.jpg",
     "misir":            "LPCC-802-Grans de blat de moro.jpg",
     "cavdar":           "LPCC-561-Grans de Secale cereale L.jpg",
-    "tritikale":        "LPCC-606-Grans de triticale.jpg",
     "soya_fasulyesi":   "A bag full of Soybean.jpg",
     # --- endustri yan urunleri ---
     "bugday_kepegi":    "WheatBran.jpg",
     "misir_kepegi":     "LPCC-896-Fibra de blat de moro.jpg",
+    "aycicegi_tohumu_kuspesi": "Sunflower meal IMG 6213.jpg",
     "soya_kuspesi":     "Soybean Meal (10059014026).jpg",
     "kuru_seker_pancari_posasi": "Zuckerrübenschnitzel.jpg",
+    "melas":            "Molasses.JPG",
     "misir_gluten_unu": "LPCC-897-Proteïna de blat de moro.jpg",
     # --- hayvansal ---
     "balik_unu":        "Fishmeal powder.jpg",
+    # Not: tuy_unu.jpg Commons'tan gelmez, ogretim elemani tarafindan
+    # saglanmistir. Bu betik kunye.json'u sifirdan yazdigi icin, yeniden
+    # calistirildiginda o kaydin elle geri eklenmesi gerekir.
 }
 
 

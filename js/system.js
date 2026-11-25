@@ -36,6 +36,18 @@ export const Timer = {
   }
 };
 
+/**
+ * Test modu. Adres satırına `?test=1` (ya da `?atla=1`) eklendiğinde açılır.
+ * Sorulara "GEÇ" düğmeleri koyar; öğrencinin oynadığı normal adreste
+ * kapalıdır, yani sınavda kimse soruları atlayamaz.
+ */
+export const TEST_MODE = (() => {
+  try {
+    const q = new URLSearchParams(location.search);
+    return q.get('test') === '1' || q.get('atla') === '1';
+  } catch (e) { return false; }
+})();
+
 export const Scoring = {
   total: 0,
   details: [],
@@ -81,26 +93,45 @@ export const ErrorLogger = {
 export const GoogleSheets = {
   // Öğretim elemanı kendi Google Apps Script Web App URL'sini buraya yapıştırır.
   // Kurulum adımları README.md dosyasındadır.
-  url: '',
+  url: 'https://script.google.com/macros/s/AKfycbz_3qyzPLx_QvES22pE2eIh5hLreEjPv_6N9rqAUGq-Y6NEu_u3z5YSw3DBtLhBrwPKpw/exec',
 
+  /**
+   * Sonucu öğretmenin Google E-Tablosuna gönderir.
+   * `{ ok, reason }` döner; arayüz buna göre durum gösterir ve tekrar
+   * deneme sunar.
+   *
+   * Önce normal (cors) istek denenir ki gerçekten ulaştığı doğrulanabilsin.
+   * Tarayıcı CORS nedeniyle engellerse `no-cors` ile ikinci bir deneme
+   * yapılır: veri Apps Script'e ulaşır ama yanıt okunamaz, bu yüzden sonuç
+   * "doğrulanamadı" olarak bildirilir — sessizce başarılı sayılmaz.
+   */
   async send(data) {
-    if (!this.url) {
-      console.info('Google Sheets URL ayarlanmamış; sonuç yalnızca tarayıcıda saklandı.');
-      return false;
-    }
+    if (!this.url) return { ok: false, reason: 'off' };
+
+    const body = JSON.stringify(data);
+    // text/plain, tarayıcının CORS ön kontrol (preflight) isteği göndermesini
+    // engeller; Apps Script gövdeyi e.postData.contents içinden okur.
+    const opts = {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body,
+      redirect: 'follow'
+    };
+
     try {
-      // text/plain, tarayıcının CORS ön kontrol (preflight) isteği göndermesini
-      // engeller; Apps Script gövdeyi e.postData.contents içinden okur.
-      const res = await fetch(this.url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(data),
-        redirect: 'follow'
-      });
-      return res.ok;
+      const res = await fetch(this.url, opts);
+      if (res.ok) {
+        const result = await res.json();
+        return result.ok ? { ok: true, reason: 'sent' } : { ok: false, reason: 'server', detail: result.hata || 'Sunucu kaydı oluşturamadı.' };
+      }
+      return { ok: false, reason: 'http', detail: String(res.status) };
     } catch (e) {
-      console.error('Sonuç gönderilemedi:', e);
-      return false;
+      try {
+        await fetch(this.url, { ...opts, mode: 'no-cors' });
+        return { ok: true, reason: 'unverified' };
+      } catch (e2) {
+        return { ok: false, reason: 'network', detail: e2.message };
+      }
     }
   }
 };

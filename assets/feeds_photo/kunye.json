@@ -29,6 +29,18 @@
   "license": "CC BY-SA 2.0",
   "page": "https://commons.wikimedia.org/wiki/File:Sweet_Vernal-grass_flowering_in_a_hay_meadow_-_geograph.org.uk_-_1869558.jpg"
  },
+ "sorgum": {
+  "title": "Espigues sorgo CP2.JPG",
+  "author": "bilinmiyor",
+  "license": "CC BY-SA 3.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Espigues_sorgo_CP2.JPG"
+ },
+ "seker_pancari": {
+  "title": "Beta vulgaris subsp. vulgaris (beets).jpg",
+  "author": "Hans Hillewaert",
+  "license": "CC BY-SA 3.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Beta_vulgaris_subsp._vulgaris_(beets).jpg"
+ },
  "misir_silaji": {
   "title": "LPCC-908-Ensitjant blat de moro.jpg",
   "author": "Miquel Pujol Palol",
@@ -71,12 +83,6 @@
   "license": "CC BY-SA 3.0",
   "page": "https://commons.wikimedia.org/wiki/File:LPCC-561-Grans_de_Secale_cereale_L.jpg"
  },
- "tritikale": {
-  "title": "LPCC-606-Grans de triticale.jpg",
-  "author": "Miquel Pujol Palol",
-  "license": "CC BY-SA 3.0",
-  "page": "https://commons.wikimedia.org/wiki/File:LPCC-606-Grans_de_triticale.jpg"
- },
  "soya_fasulyesi": {
   "title": "A bag full of Soybean.jpg",
   "author": "Dammy Kaka",
@@ -95,6 +101,12 @@
   "license": "CC BY-SA 3.0",
   "page": "https://commons.wikimedia.org/wiki/File:LPCC-896-Fibra_de_blat_de_moro.jpg"
  },
+ "aycicegi_tohumu_kuspesi": {
+  "title": "Sunflower meal IMG 6213.jpg",
+  "author": "Gilles Tran, AFZ",
+  "license": "CC BY-SA 3.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Sunflower_meal_IMG_6213.jpg"
+ },
  "soya_kuspesi": {
   "title": "Soybean Meal (10059014026).jpg",
   "author": "United Soybean Board",
@@ -106,6 +118,12 @@
   "author": "Blonder1984",
   "license": "CC BY-SA 3.0",
   "page": "https://commons.wikimedia.org/wiki/File:Zuckerr%C3%BCbenschnitzel.jpg"
+ },
+ "melas": {
+  "title": "Molasses.JPG",
+  "author": "Tractorboy60",
+  "license": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Molasses.JPG"
  },
  "misir_gluten_unu": {
   "title": "LPCC-897-Proteïna de blat de moro.jpg",
@@ -119,22 +137,16 @@
   "license": "CC BY-SA 2.0",
   "page": "https://commons.wikimedia.org/wiki/File:Fishmeal_powder.jpg"
  },
- "sorgum": {
-  "title": "Espigues sorgo CP2.JPG",
-  "author": "bilinmiyor (bkz. dosya sayfası)",
-  "license": "CC BY-SA 3.0",
-  "page": "https://commons.wikimedia.org/wiki/File:Espigues_sorgo_CP2.JPG"
+ "tuy_unu": {
+  "title": "tuy_unu.jpg (kullanıcı tarafından sağlandı)",
+  "author": "Öğretim elemanı tarafından sağlandı",
+  "license": "Kaynak belirtilmedi",
+  "page": ""
  },
- "italyan_cimi": {
-  "title": "Lolium multiflorum, Santa Coloma de Farners.jpg",
-  "author": "Josep Gesti",
-  "license": "CC BY-SA 4.0",
-  "page": "https://commons.wikimedia.org/wiki/File:Lolium_multiflorum,_Santa_Coloma_de_Farners.jpg"
- },
- "tas_yoncasi": {
-  "title": "Melilotus officinalis - yellow sweetclover - 1.jpg",
-  "author": "Matt Lavin",
-  "license": "CC BY-SA 2.0",
-  "page": "https://commons.wikimedia.org/wiki/File:Melilotus_officinalis_-_yellow_sweetclover_-_1.jpg"
+ "pamuk_tohumu_kuspesi": {
+  "title": "pamuk_tohumu_kuspesi.jpg (kullanıcı tarafından sağlandı)",
+  "author": "Öğretim elemanı tarafından sağlandı",
+  "license": "Kaynak belirtilmedi",
+  "page": ""
  }
 }

@@ -1,10 +1,10 @@
 // game.js — Yem Laboratuvarı oyun akışı
 import {
-  getFeedPhoto, getRandomPhotoFeeds, getRandomImageFeeds,
+  getFeedPhoto, getRandomPhotoFeeds,
   getGroupingSet, getFeatureDistractors, shuffle
 } from './feeds.js';
 import { UI } from './ui.js';
-import { Timer, Scoring, Storage, ErrorLogger, GoogleSheets } from './system.js';
+import { Timer, Scoring, Storage, ErrorLogger, GoogleSheets, TEST_MODE } from './system.js';
 import { Lab } from './lab.js';
 import { initWorld, setInteractCallback, setUpdateCallback, setRenderingActive,
          getScene, getCamera, getInteractables } from './world.js';
@@ -14,7 +14,7 @@ import { Audio } from './audio.js';
 const PHASE_LABELS = {
   IDENTIFICATION: 'YEM TANIMA',
   FEATURE: 'YEM ÖZELLİĞİ',
-  IMAGE_MATCHING: 'GÖRSEL EŞLEŞTİRME',
+  IMAGE_MATCHING: 'FOTOĞRAF EŞLEŞTİRME',
   GROUPING: 'GRUPLANDIRMA',
   LAB: 'LABORATUVAR',
   RESULT: 'SONUÇ'
@@ -51,7 +51,7 @@ export const Game = {
     this.feed = getRandomPhotoFeeds(1)[0];
 
     this.groupingFeeds = getGroupingSet(5, this.feed.id);
-    this.imageMatchingFeeds = getRandomImageFeeds(5, this.feed);
+    this.imageMatchingFeeds = getRandomPhotoFeeds(5, this.feed);
 
     Scoring.reset();
     ErrorLogger.clear();
@@ -91,6 +91,50 @@ export const Game = {
     UI.setHUD(PHASE_LABELS[this.phase] || this.phase, Scoring.total);
   },
 
+  // ------------------------------------------------------- Test modu
+
+  // Soru aşamaları: [aşama, puan etiketi, üst sınır, sonraki aşama]
+  QUIZ_PHASES: [
+    ['IDENTIFICATION', 'Yem Tanıma',           POINTS.identification, 'FEATURE'],
+    ['FEATURE',        'Yem Özelliği',         POINTS.feature,        'IMAGE_MATCHING'],
+    ['IMAGE_MATCHING', 'Fotoğraf Eşleştirme',  POINTS.matchingMax,    'GROUPING'],
+    ['GROUPING',       'Gruplandırma',         POINTS.groupingMax,    'LAB']
+  ],
+
+  /**
+   * Test modunda sorulara takılan "GEÇ" düğmelerinin kancaları.
+   * TEST_MODE kapalıyken null döner, arayüz de düğme çizmez.
+   */
+  skipHooks(phase) {
+    if (!TEST_MODE) return null;
+    return {
+      one: () => this.skipPhase(phase),
+      all: () => this.skipAllQuizzes(phase)
+    };
+  },
+
+  /** Tek soruyu atlar: 0 puan yazılır ve kayda geçer. */
+  skipPhase(phase) {
+    const row = this.QUIZ_PHASES.find(r => r[0] === phase);
+    if (!row) return;
+    const [, label, max, next] = row;
+    Scoring.add(label, 0, max);
+    ErrorLogger.log(label, 'Soru atlandı (test modu).');
+    UI.toast(`${label} atlandı — 0 puan.`, 'error');
+    this.setPhase(next);
+  },
+
+  /** Bu sorudan itibaren kalan bütün soruları atlar ve laboratuvara geçer. */
+  skipAllQuizzes(phase) {
+    const i = this.QUIZ_PHASES.findIndex(r => r[0] === phase);
+    for (const [, label, max] of this.QUIZ_PHASES.slice(i < 0 ? 0 : i)) {
+      Scoring.add(label, 0, max);
+      ErrorLogger.log(label, 'Soru atlandı (test modu).');
+    }
+    UI.toast('Kalan sorular atlandı — laboratuvara geçiliyor.', 'error', 3200);
+    this.setPhase('LAB');
+  },
+
   // ------------------------------------------------------- 1. Yem tanıma
   runIdentification() {
     // Çeldiriciler de fotoğraf havuzundan gelir; böylece seçenekler
@@ -119,7 +163,8 @@ export const Game = {
         Scoring.add('Yem Tanıma', ok ? POINTS.identification : 0, POINTS.identification);
         this.setPhase('FEATURE');
       },
-      { src: getFeedPhoto(this.feed), photo: true }
+      { src: getFeedPhoto(this.feed), photo: true },
+      this.skipHooks('IDENTIFICATION')
     );
   },
 
@@ -147,7 +192,9 @@ export const Game = {
         Audio.play(ok ? 'correct' : 'wrong');
         Scoring.add('Yem Özelliği', ok ? POINTS.feature : 0, POINTS.feature);
         this.setPhase('IMAGE_MATCHING');
-      }
+      },
+      null,
+      this.skipHooks('FEATURE')
     );
   },
 
@@ -156,10 +203,10 @@ export const Game = {
     UI.showImageMatching(this.imageMatchingFeeds, (correct, wrongTries) => {
       const raw = correct * POINTS.matchingPerItem;
       const penalty = Math.min(wrongTries, 4, raw);
-      Scoring.add('Görsel Eşleştirme', raw - penalty, POINTS.matchingMax);
-      if (wrongTries) ErrorLogger.log('Görsel Eşleştirme', `${wrongTries} yanlış deneme.`);
+      Scoring.add('Fotoğraf Eşleştirme', raw - penalty, POINTS.matchingMax);
+      if (wrongTries) ErrorLogger.log('Fotoğraf Eşleştirme', `${wrongTries} yanlış deneme.`);
       this.setPhase('GROUPING');
-    });
+    }, this.skipHooks('IMAGE_MATCHING'));
   },
 
   // ------------------------------------------------------- 4. Gruplandırma
@@ -170,7 +217,7 @@ export const Game = {
       Scoring.add('Gruplandırma', raw - penalty, POINTS.groupingMax);
       if (wrongTries) ErrorLogger.log('Gruplandırma', `${wrongTries} yanlış deneme.`);
       this.setPhase('LAB');
-    });
+    }, this.skipHooks('GROUPING'));
   },
 
   // ------------------------------------------------------- 5. Laboratuvar
@@ -209,7 +256,9 @@ export const Game = {
     // Laboratuvarda müzik yerini ortam uğultusuna bırakır.
     Audio.stopLoop('music');
     Audio.startLoop('ambience', 0.22);
-    UI.toast('Laboratuvardasınız. W A S D ile hareket, E ile cihazı kullanın.', 'info', 5000);
+    // Kontrolleri ve görevleri laboratuvar sorumlusu anlatır; kısa toast
+    // yerine bir kez açılan rehber penceresi kullanılır.
+    UI.showGuide();
   },
 
   /** Sahne döngüsünün her karesinde çalışır. */
@@ -255,6 +304,33 @@ export const Game = {
   },
 
   // ------------------------------------------------------- Bitiş
+
+  /**
+   * Puan kesintilerini tek listede toplar.
+   * İki kaynak vardır: doğrudan ceza satırları (negatif puanlı, örn. işlem
+   * hatası veya gereksiz malzeme) ve tam puan alınamayan bölümler
+   * (kazanılan < üst sınır).
+   */
+  buildDeductions() {
+    const list = [];
+    for (const d of Scoring.details) {
+      if (d.points < 0) {
+        list.push({ yer: d.label, kayip: -d.points, tur: 'ceza' });
+      } else if (d.max && d.points < d.max) {
+        list.push({ yer: d.label, kayip: d.max - d.points, tur: 'eksik',
+                    alinan: d.points, ustSinir: d.max });
+      }
+    }
+    return list;
+  },
+
+  /** Hata kaydının oyun başından itibaren geçen süresi (dd:ss). */
+  errorClock(iso) {
+    if (!this.started) return '';
+    const sec = Math.max(0, Math.round((new Date(iso) - this.started) / 1000));
+    return Timer.format(sec);
+  },
+
   endGame(reason = '') {
     if (this._ended) return;
     this._ended = true;
@@ -278,10 +354,32 @@ export const Game = {
         </span>
       </div>`).join('');
 
-    const errors = ErrorLogger.errors.length
-      ? `<details class="err-list"><summary>${ErrorLogger.errors.length} hata kaydı</summary>
-         <ul>${ErrorLogger.errors.map(e =>
-           `<li><b>${e.phase}:</b> ${e.message}</li>`).join('')}</ul></details>`
+    // --- Puan kırılan yerler (açık liste, katlanmaz) ---
+    const kesintiler = this.buildDeductions();
+    const toplamKesinti = kesintiler.reduce((s, k) => s + k.kayip, 0);
+    const kesintiHtml = kesintiler.length
+      ? `<div class="score-rows deduction-rows">
+           ${kesintiler.map(k => `
+             <div class="row">
+               <span>${k.yer}${k.tur === 'eksik'
+                 ? ` <i class="dim">(${k.alinan}/${k.ustSinir} puan alındı)</i>` : ''}</span>
+               <span class="err">−${k.kayip} puan</span>
+             </div>`).join('')}
+           <div class="row total">
+             <span>Toplam kesinti</span><span class="err">−${toplamKesinti} puan</span>
+           </div>
+         </div>`
+      : '<p class="ok">Hiçbir yerden puan kırılmadı.</p>';
+
+    // --- Yapılan hataların tamamı (açık liste, katlanmaz) ---
+    const hataHtml = ErrorLogger.errors.length
+      ? `<ol class="err-list-open">
+           ${ErrorLogger.errors.map(e => `
+             <li>
+               <span class="err-time">${this.errorClock(e.time)}</span>
+               <b>${e.phase}:</b> ${e.message}
+             </li>`).join('')}
+         </ol>`
       : '<p class="ok">Hata kaydı yok.</p>';
 
     const html = `
@@ -292,9 +390,15 @@ export const Game = {
       </p>
       <div class="score-rows">${rows}</div>
       <h4>TOPLAM PUAN: ${total} / 100</h4>
-      ${errors}`;
+
+      <h4 class="final-sec">PUAN KIRILAN YERLER</h4>
+      ${kesintiHtml}
+
+      <h4 class="final-sec">YAPILAN HATALAR (${ErrorLogger.errors.length})</h4>
+      ${hataHtml}`;
 
     const payload = {
+      gonderimId: globalThis.crypto?.randomUUID?.() || Date.now().toString(36) + '-' + Math.random().toString(36).slice(2),
       ad: this.student.ad,
       soyad: this.student.soyad,
       ogrenciNo: this.student.ogr,
@@ -302,7 +406,12 @@ export const Game = {
       grup: this.feed.mainGroup,
       puan: total,
       detay: Scoring.details,
-      hatalar: ErrorLogger.errors,
+      kesintiler,
+      toplamKesinti,
+      hataSayisi: ErrorLogger.errors.length,
+      hatalar: ErrorLogger.errors.map(e => ({
+        dakika: this.errorClock(e.time), asama: e.phase, aciklama: e.message
+      })),
       sureSaniye: elapsed,
       bitis: reason,
       tarih: new Date().toISOString()
@@ -312,12 +421,43 @@ export const Game = {
       `${this.student.ad} ${this.student.soyad} (${this.student.ogr})\n` +
       `Numune: ${this.feed.name}\n` +
       Scoring.details.map(d => `${d.label}: ${d.points}/${d.max}`).join('\n') +
-      `\nTOPLAM: ${total}/100\nSüre: ${Timer.format(elapsed)}`;
+      `\nTOPLAM: ${total}/100\nSüre: ${Timer.format(elapsed)}\n` +
+      `\nPUAN KIRILAN YERLER:\n` +
+      (kesintiler.length
+        ? kesintiler.map(k => `- ${k.yer}: -${k.kayip}`).join('\n') +
+          `\nToplam kesinti: -${toplamKesinti}`
+        : '- yok') +
+      `\n\nYAPILAN HATALAR (${ErrorLogger.errors.length}):\n` +
+      (ErrorLogger.errors.length
+        ? ErrorLogger.errors.map(e =>
+            `- [${this.errorClock(e.time)}] ${e.phase}: ${e.message}`).join('\n')
+        : '- yok');
 
     Audio.stopLoop('music');
     UI.showFinal(html, copyText);
     Storage.save({ sonuc: payload });
-    GoogleSheets.send(payload);
+    this.deliver(payload);
+  },
+
+  /**
+   * Sonucu öğretim elemanının Google E-Tablosuna gönderir ve sonuç ekranında
+   * durumu gösterir. Başarısızlıkta öğrenci "TEKRAR GÖNDER" ile deneyebilir;
+   * her hâlükârda kopyalanabilir özet yedek yol olarak durur.
+   */
+  async deliver(payload) {
+    UI.setSendStatus({ state: 'sending' });
+    const res = await GoogleSheets.send(payload);
+    if (res.ok) {
+      UI.setSendStatus({ state: res.reason === 'unverified' ? 'unverified' : 'sent' });
+    } else if (res.reason === 'off') {
+      UI.setSendStatus({ state: 'off' });
+    } else {
+      UI.setSendStatus({
+        state: 'fail',
+        detail: res.detail || '',
+        onRetry: () => this.deliver(payload)
+      });
+    }
   },
 
   saveState() {

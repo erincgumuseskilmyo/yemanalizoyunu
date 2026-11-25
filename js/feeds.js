@@ -1,50 +1,15 @@
-// Görseller assets/feeds klasöründen yüklenir.
-// Dosya adı yem adıyla eşleştirilir. Mevcut PNG'ler için özel adlar aşağıdadır.
-const FEED_IMAGE_FILES = {
-  "Yonca": "yonca.png",
-  "Korunga": "korunga.png",
-  "Üçgül": "ucgul.png",
-  "Fiğ": "fig.png",
-  "Çayır ve mera otu": "cayir_mera_otu.png",
-  "Mısır hasılı": "misir_hasili.png",
-  "Çavdar hasılı": "cavdar_hasili.png",
-  "Yulaf hasılı": "yulaf_hasili.png",
-  "Mısır silajı": "misir_silaji.png",
-  "Saman": "saman.png",
-  "Buğday": "bugday.png",
-  "Arpa": "arpa.png",
-  "Yulaf": "yulaf.png",
-  "Mısır": "misir.png",
-  "Çavdar": "cavdar.png",
-  "Tritikale": "tritikale.png",
-  "Soya fasulyesi": "soya_fasulyesi.png",
-  "Buğday kepeği": "bugday_kepegi.png",
-  "Mısır kepeği": "misir_kepegi.png",
-  "Ayçiçeği küspesi": "aycicegi_kuspesi.png",
-  "Pamuk tohumu küspesi": "pamuk_tohumu_kuspesi.png",
-  "Soya küspesi": "soya_kuspesi.png",
-  "Kuru şeker pancarı posası": "kuru_seker_pancari_posasi.png",
-  "Mısır gluten unu": "misir_gluten_unu.png",
-  "Balık unu": "balik_unu.png"
-};
-
-function feedImagePath(feed) {
-  const file = FEED_IMAGE_FILES[feed.name];
-  return file ? `assets/feeds/${file}` : null;
-}
-
-// Ilk soru (yem tanima) icin gercek fotograflar. Piksel sanat gorseller
-// tanimayi kolaylastirdigindan, tanima sorusu gercek numune fotograflari
-// uzerinden sorulur. Kunye: assets/feeds_photo/kunye.json
+// Yem gorselleri: 1. soru (tanima) ve 3. soru (gorsel eslestirme) icin
+// gercek numune fotograflari kullanilir. Piksel-sanat gorseller kafa
+// karistirdigi icin tumuyle kaldirilmistir.
+// Kunye: assets/feeds_photo/kunye.json
 const FEED_PHOTO_FILES = {
   "Yonca": "yonca.jpg",
   "Korunga": "korunga.jpg",
   "Üçgül": "ucgul.jpg",
-  "Fiğ": "fig.jpg",
+  "Fiğ otu": "fig.jpg",
   "Çayır ve mera otu": "cayir_mera_otu.jpg",
-  "Mısır hasılı": "misir_hasili.jpg",
-  "Çavdar hasılı": "cavdar_hasili.jpg",
-  "Yulaf hasılı": "yulaf_hasili.jpg",
+  "Sorgum (Sudan otu)": "sorgum.jpg",
+  "Şeker pancarı": "seker_pancari.jpg",
   "Mısır silajı": "misir_silaji.jpg",
   "Saman": "saman.jpg",
   "Buğday": "bugday.jpg",
@@ -52,14 +17,17 @@ const FEED_PHOTO_FILES = {
   "Yulaf": "yulaf.jpg",
   "Mısır": "misir.jpg",
   "Çavdar": "cavdar.jpg",
-  "Tritikale": "tritikale.jpg",
   "Soya fasulyesi": "soya_fasulyesi.jpg",
   "Buğday kepeği": "bugday_kepegi.jpg",
   "Mısır kepeği": "misir_kepegi.jpg",
+  "Ayçiçeği tohumu küspesi": "aycicegi_tohumu_kuspesi.jpg",
+  "Pamuk tohumu küspesi": "pamuk_tohumu_kuspesi.jpg",
   "Soya küspesi": "soya_kuspesi.jpg",
   "Kuru şeker pancarı posası": "kuru_seker_pancari_posasi.jpg",
+  "Melas": "melas.jpg",
   "Mısır gluten unu": "misir_gluten_unu.jpg",
-  "Balık unu": "balik_unu.jpg"
+  "Balık unu": "balik_unu.jpg",
+  "Tüy unu": "tuy_unu.jpg"
 };
 
 function feedPhotoPath(feed) {
@@ -67,135 +35,178 @@ function feedPhotoPath(feed) {
   return file ? `assets/feeds_photo/${file}` : null;
 }
 
-// feeds.js — 25 Yem Veritabanı (Kitap çerçevesine uygun)
+/**
+ * Haritadaki fotoğraf dosyalarının gerçekten var olup olmadığını bir kez
+ * denetler; bulunamayanları haritadan düşürür ve bulunanları önden yükler.
+ *
+ * Böylece bir yemin fotoğrafı henüz eklenmemişse 1. ve 3. soruda kırık görsel
+ * çıkmaz — o yem yalnızca gruplandırmada ve çeldiricilerde görünür. Dosya
+ * `assets/feeds_photo/` altına doğru adla konduğunda kod değişikliğine gerek
+ * kalmadan kendiliğinden devreye girer.
+ */
+export function verifyFeedPhotos() {
+  // Tek bir denemede ağ hatası olursa yem havuzdan sessizce düşerdi; bu
+  // yüzden başarısız yükleme bir kez daha denenir.
+  const dene = (file, ilk) => new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(ilk ? dene(file, false) : false);
+    // İlk deneme sade adresle yapılır ki tarayıcı önbelleği sorularda da
+    // kullanılabilsin; yalnızca tekrar denemesi önbelleği atlar.
+    img.src = `assets/feeds_photo/${file}` + (ilk ? '' : '?yeniden=1');
+  });
+
+  const jobs = Object.entries(FEED_PHOTO_FILES).map(([name, file]) =>
+    dene(file, true).then(ok => (ok ? null : name)));
+
+  return Promise.all(jobs).then(results => {
+    const eksik = results.filter(Boolean);
+    for (const name of eksik) delete FEED_PHOTO_FILES[name];
+    if (eksik.length) {
+      console.warn('Fotoğrafı bulunamayan yemler (1. ve 3. soruda çıkmaz): ' +
+                   eksik.join(', '));
+    }
+    return Object.keys(FEED_PHOTO_FILES).length;
+  });
+}
+
+// feeds.js — 26 Yem Veritabanı
+// Besin madde değerleri ve ayırt edici özellikler, Anadolu Üniversitesi
+// "Temel Yem Bilgisi ve Hayvan Besleme" (2012, ISBN 978-975-06-0963-3)
+// ders kitabından alınmıştır; ayrıntı için KAYNAKLAR.md.
 // Not: Sorular ve şıklar burada saklanmaz. Seçenekler oyun sırasında
 // diğer yemlerin `distinctiveFeature` alanlarından üretilip her defasında
 // karıştırılır; böylece doğru cevabın yeri sabitlenmez.
 export const FEEDS = [
   {
     id: 1, name: "Yonca", mainGroup: "Kaba Yemler",
-    distinctiveFeature: "Yeşil yapraklı kaba yem bitkisi olup protein ve kalsiyum bakımından zengindir; rumen mikrobiyal aktiviteyi destekler.",
-    ref: { dryMatter: 18.50, ash: 8.20, fat: 2.80 }
+    distinctiveFeature: "Yem bitkilerinin en önemlisi sayılan, yılda 3-4 kez biçilen çok yıllık baklagildir; protein, kalsiyum ve karoten bakımından zengindir.",
+    ref: { dryMatter: 24.00, ash: 9.00, fat: 2.00 }
   },
   {
     id: 2, name: "Korunga", mainGroup: "Kaba Yemler",
-    distinctiveFeature: "Çok yıllık baklagil kaba yem olup kondense tanen içerdiğinden ruminantlarda şişkinlik (timpani) yapmaz; kurağa ve kireçli topraklara dayanıklıdır.",
-    ref: { dryMatter: 20.10, ash: 7.50, fat: 2.20 }
+    distinctiveFeature: "Soğuğa ve kurağa dayanıklı, minerallerce zengin çok yıllık baklagildir; yoncanın aksine timpani (gaz şişkinliği) yapmaz.",
+    ref: { dryMatter: 23.00, ash: 6.00, fat: 2.50 }
   },
   {
     id: 3, name: "Üçgül", mainGroup: "Kaba Yemler",
-    distinctiveFeature: "Baklagiller familyasından, yem değeri yüksek, çok yıllık bir kaba yem bitkisidir.",
-    ref: { dryMatter: 19.80, ash: 7.80, fat: 3.10 }
+    distinctiveFeature: "Ülkemiz çayır ve meralarında bol bulunan, protein, mineral ve vitaminlerce zengin, lezzetli bir baklagil yem bitkisidir.",
+    ref: { dryMatter: 19.00, ash: 10.00, fat: 4.00 }
   },
   {
-    id: 4, name: "Fiğ", mainGroup: "Kaba Yemler",
-    distinctiveFeature: "Kışlık baklagil kaba yem olup tohum ve yeşil otuyla değerlendirilir; protein bakımından zengindir.",
-    ref: { dryMatter: 17.50, ash: 8.50, fat: 2.50 }
+    id: 4, name: "Fiğ otu", mainGroup: "Kaba Yemler",
+    distinctiveFeature: "Ilıman iklimlerde yetişen, 150 kadar türü bulunan baklagildir; tanesindeki visin ve visianin acı lezzet verdiğinden aşırı tüketimi sütün tadını bozar.",
+    ref: { dryMatter: 18.00, ash: 8.00, fat: 3.00 }
   },
   {
     id: 5, name: "Çayır ve mera otu", mainGroup: "Kaba Yemler",
-    distinctiveFeature: "Doğal veya yapay olarak yetişen çok türlü bitki karışımından oluşan temel kaba yem kaynağıdır.",
-    ref: { dryMatter: 20.50, ash: 9.20, fat: 3.00 }
+    distinctiveFeature: "Buğdaygil, baklagil ve diğer familyalardan bitkilerin karışımıdır; besin madde içeriği vejetasyon dönemi, bitki türü, iklim, otlatma ve gübrelemeye göre değişir.",
+    ref: { dryMatter: 20.00, ash: 10.00, fat: 4.50 }
   },
   {
-    id: 6, name: "Mısır hasılı", mainGroup: "Kaba Yemler",
-    distinctiveFeature: "Yeşil ot olarak hasat edilen mısır bitkisidir; nişasta ve enerji bakımından zengin kaba yemdir.",
-    ref: { dryMatter: 18.00, ash: 6.50, fat: 2.80 }
+    id: 6, name: "Sorgum (Sudan otu)", mainGroup: "Kaba Yemler",
+    distinctiveFeature: "Sıcağa ve kurağa dayanıklı buğdaygil yem bitkisidir; silajı süt olum döneminde yapılır, genç bitkide ve don sonrasında prussik asit (HCN) birikebilir.",
+    ref: { dryMatter: 22.00, ash: 8.60, fat: 2.30 }
   },
   {
-    id: 7, name: "Çavdar hasılı", mainGroup: "Kaba Yemler",
-    distinctiveFeature: "Yeşil ot olarak hasat edilen çavdar bitkisidir; kışlık tahıl hasılı olup kaba yem değeri yüksektir.",
-    ref: { dryMatter: 19.20, ash: 8.00, fat: 3.20 }
+    id: 7, name: "Şeker pancarı", mainGroup: "Kaba Yemler",
+    distinctiveFeature: "Öncelikle şeker üretimi için yetiştirilen bir kök yemdir; kolay eriyebilir karbonhidratlarca zengin olduğundan ruminantlarda gaz yapar, kuru ot ve samanla karıştırılarak verilmelidir.",
+    ref: { dryMatter: 23.00, ash: 5.80, fat: 0.70 }
   },
   {
-    id: 8, name: "Yulaf hasılı", mainGroup: "Kaba Yemler",
-    distinctiveFeature: "Yeşil ot olarak hasat edilen yulaf bitkisidir; sindirilebilirlik ve protein değeri orta düzeydedir.",
-    ref: { dryMatter: 18.80, ash: 9.00, fat: 3.50 }
-  },
-  {
-    id: 9, name: "Mısır silajı", mainGroup: "Kaba Yemler",
-    distinctiveFeature: "Mısır bitkisinin silolanmasıyla elde edilen, enerji yoğunluğu yüksek, ruminantlarda temel kaba yemdir.",
+    id: 8, name: "Mısır silajı", mainGroup: "Kaba Yemler",
+    distinctiveFeature: "Silolamaya en uygun bitki olan mısır hasılından yapılır; enerjice zengin, sulu bir kaba yemdir, ileri gebe hayvanlarda aşırı kullanımı doğum güçlüğüne yol açar.",
     ref: { dryMatter: 30.00, ash: 4.50, fat: 2.80 }
   },
   {
-    id: 10, name: "Saman", mainGroup: "Kaba Yemler",
-    distinctiveFeature: "Tahıl bitkilerinin sap ve yapraklarından oluşan, lif oranı yüksek, enerji değeri düşük kaba yemdir.",
-    ref: { dryMatter: 88.00, ash: 6.50, fat: 1.80 }
+    id: 9, name: "Saman", mainGroup: "Kaba Yemler",
+    distinctiveFeature: "Tohumu alınmış otların sap ve yapraklarıdır; besin maddelerince çok fakir, selülozca zengindir. Sodyum hidroksit veya amonyakla muamele edilerek sindirilebilirliği artırılır.",
+    ref: { dryMatter: 86.00, ash: 7.10, fat: 1.50 }
   },
   {
-    id: 11, name: "Buğday", mainGroup: "Buğdaygil Tane Yemleri",
-    distinctiveFeature: "Buğdaygil tane yem olup nişasta bakımından zengindir; enerji kaynağı olarak kullanılır.",
-    ref: { dryMatter: 88.50, ash: 2.00, fat: 1.90 }
+    id: 10, name: "Buğday", mainGroup: "Buğdaygil Tane Yemleri",
+    distinctiveFeature: "Her hayvan türü için sindirilme derecesi yüksek bir tane yemdir; içerdiği NOP nedeniyle kanatlı rasyonlarında kullanımı sınırlıdır, ince öğütülürse sindirim bozukluğu yapar.",
+    ref: { dryMatter: 88.00, ash: 2.27, fat: 2.27 }
   },
   {
-    id: 12, name: "Arpa", mainGroup: "Buğdaygil Tane Yemleri",
-    distinctiveFeature: "Buğdaygil tane yem olup sindirilebilirliği yüksek, beta-glukan içeriği dikkat edilmesi gereken enerji yemidir.",
-    ref: { dryMatter: 88.00, ash: 2.50, fat: 2.10 }
+    id: 11, name: "Arpa", mainGroup: "Buğdaygil Tane Yemleri",
+    distinctiveFeature: "Biracılık sanayisinin başlıca ham maddesidir; yem değeri kavuz miktarına bağlıdır, içerdiği beta-glukan kanatlılarda yapışkan ve sulu dışkıya yol açar.",
+    ref: { dryMatter: 89.00, ash: 2.81, fat: 2.25 }
   },
   {
-    id: 13, name: "Yulaf", mainGroup: "Buğdaygil Tane Yemleri",
-    distinctiveFeature: "Kabuğu kalın buğdaygil tane yem olup lif oranı diğer tahıllara göre yüksektir.",
-    ref: { dryMatter: 89.00, ash: 3.20, fat: 4.50 }
+    id: 12, name: "Yulaf", mainGroup: "Buğdaygil Tane Yemleri",
+    distinctiveFeature: "Tahıllar içinde ham selülozu en yüksek (%11), kavuz oranı %20-30 olan tane yemdir; yağı (%4-6) doymamış yağ asitlerince zengindir.",
+    ref: { dryMatter: 89.00, ash: 3.37, fat: 4.49 }
   },
   {
-    id: 14, name: "Mısır", mainGroup: "Buğdaygil Tane Yemleri",
-    distinctiveFeature: "Nişasta oranı en yüksek buğdaygil tane yemdir; enerji konsantrasyonu bakımından öne çıkar.",
-    ref: { dryMatter: 87.50, ash: 1.50, fat: 4.00 }
+    id: 13, name: "Mısır", mainGroup: "Buğdaygil Tane Yemleri",
+    distinctiveFeature: "Ham selülozu düşük (%2), enerjisi çok yüksek bir enerji yemidir; buna karşılık proteini düşük (%8) ve lizin ile triptofan bakımından çok fakirdir.",
+    ref: { dryMatter: 86.00, ash: 1.40, fat: 4.07 }
   },
   {
-    id: 15, name: "Çavdar", mainGroup: "Buğdaygil Tane Yemleri",
-    distinctiveFeature: "Soğuğa dayanıklı buğdaygil tane yem olup ergot kontaminasyonu riski taşıyabilir.",
-    ref: { dryMatter: 88.00, ash: 2.20, fat: 1.80 }
+    id: 14, name: "Çavdar", mainGroup: "Buğdaygil Tane Yemleri",
+    distinctiveFeature: "Besin madde bileşimi buğdaya benzer; tahıl taneleri arasında lezzeti en düşük olanıdır ve gebe ineklerde yavru atmaya yol açabilir.",
+    ref: { dryMatter: 88.00, ash: 1.82, fat: 1.70 }
   },
   {
-    id: 16, name: "Tritikale", mainGroup: "Buğdaygil Tane Yemleri",
-    distinctiveFeature: "Buğday ve çavdarın melezlenmesiyle elde edilen tane yemdir.",
-    ref: { dryMatter: 88.20, ash: 2.10, fat: 1.90 }
+    id: 15, name: "Soya fasulyesi", mainGroup: "Baklagil Tane Yemleri",
+    distinctiveFeature: "Baklagil taneleri içinde en yüksek yem değerine sahiptir (ortalama %38 ham protein, %20 ham yağ); çiğ hâlde tripsin inhibitörü içerdiğinden ısıl işlem görmeden kullanılmamalıdır.",
+    ref: { dryMatter: 92.00, ash: 5.43, fat: 18.48 }
   },
   {
-    id: 17, name: "Soya fasulyesi", mainGroup: "Baklagil Tane Yemleri",
-    distinctiveFeature: "Baklagil tane yem olup protein ve yağ oranı en yüksek olanlarındandır; urease aktivitesi vardır.",
-    ref: { dryMatter: 90.00, ash: 5.20, fat: 19.50 }
+    id: 16, name: "Buğday kepeği", mainGroup: "Endüstri Yan Ürünleri",
+    distinctiveFeature: "Un endüstrisi yan ürünüdür; fosfor bakımından taneden zengindir, yoğun yemleri hafifletir, lezzeti artırır ve sindirimi kolaylaştırır.",
+    ref: { dryMatter: 90.00, ash: 6.67, fat: 4.44 }
   },
   {
-    id: 18, name: "Buğday kepeği", mainGroup: "Endüstri Yan Ürünleri",
-    distinctiveFeature: "Un endüstrisi yan ürünü olup protein ve posa bakımından zengin, enerji değeri düşük konsantre yemdir.",
-    ref: { dryMatter: 89.00, ash: 5.80, fat: 4.20 }
+    id: 17, name: "Mısır kepeği", mainGroup: "Endüstri Yan Ürünleri",
+    distinctiveFeature: "Mısırın işlenmesinde embriyoların ayrılmasından sonra kalan iri öğütme artıklarının ikinci kez öğütülmesiyle elde edilir; sarı mısırdan elde edileni ksantofil ve karotence zengindir.",
+    ref: { dryMatter: 88.50, ash: 3.80, fat: 4.50 }
   },
   {
-    id: 19, name: "Mısır kepeği", mainGroup: "Endüstri Yan Ürünleri",
-    distinctiveFeature: "Mısır unu endüstrisi yan ürünü olup protein ve posa içeren enerji kaynağıdır.",
-    ref: { dryMatter: 88.50, ash: 4.50, fat: 3.80 }
+    id: 18, name: "Ayçiçeği tohumu küspesi", mainGroup: "Endüstri Yan Ürünleri",
+    distinctiveFeature: "Yağ endüstrisi yan ürünüdür; kalitesi içerdiği kabuk miktarına bağlı olup ham selülozu %14-28 ile yüksektir.",
+    ref: { dryMatter: 90.00, ash: 7.78, fat: 1.11 }
   },
   {
-    id: 20, name: "Ayçiçeği küspesi", mainGroup: "Endüstri Yan Ürünleri",
-    distinctiveFeature: "Yağ endüstrisi yan ürünü olup yağ çıkarıldıktan sonra protein kaynağı olarak kullanılır.",
-    ref: { dryMatter: 91.00, ash: 6.50, fat: 1.50 }
+    id: 19, name: "Pamuk tohumu küspesi", mainGroup: "Endüstri Yan Ürünleri",
+    distinctiveFeature: "Yağı alınmış pamuk tohumundan elde edilir; kullanımını sınırlayan gosipol adlı polifenolik bileşiği içerir.",
+    ref: { dryMatter: 90.00, ash: 7.78, fat: 1.11 }
   },
   {
-    id: 21, name: "Pamuk tohumu küspesi", mainGroup: "Endüstri Yan Ürünleri",
-    distinctiveFeature: "Yağ endüstrisi yan ürünü olup protein bakımından zengindir; gossypol içerebilir.",
-    ref: { dryMatter: 92.00, ash: 6.00, fat: 1.20 }
+    id: 20, name: "Soya küspesi", mainGroup: "Endüstri Yan Ürünleri",
+    distinctiveFeature: "Kanatlı ve domuz beslemede başlıca protein kaynağıdır; %44-50 ham protein içerir, lezzetli ve yüksek sindirilebilirliktedir.",
+    ref: { dryMatter: 90.00, ash: 6.67, fat: 1.11 }
   },
   {
-    id: 22, name: "Soya küspesi", mainGroup: "Endüstri Yan Ürünleri",
-    distinctiveFeature: "Yağ endüstrisi yan ürünü olup protein oranı yüksek, ruminant ve kanatlı beslemede yaygın kullanılan protein kaynağıdır.",
-    ref: { dryMatter: 90.50, ash: 6.50, fat: 1.50 }
+    id: 21, name: "Kuru şeker pancarı posası", mainGroup: "Endüstri Yan Ürünleri",
+    distinctiveFeature: "Şeker üretiminden kalan posanın kurutulmasıyla elde edilir; fazla su çektiğinden ağızda salyayı emerek yutmayı güçleştirir.",
+    ref: { dryMatter: 90.00, ash: 5.56, fat: 0.44 }
   },
   {
-    id: 23, name: "Kuru şeker pancarı posası", mainGroup: "Endüstri Yan Ürünleri",
-    distinctiveFeature: "Şeker endüstrisi yan ürünü olup posa ve pektin bakımından zengin, enerji kaynağıdır.",
-    ref: { dryMatter: 91.00, ash: 7.00, fat: 0.50 }
+    id: 22, name: "Melas", mainGroup: "Endüstri Yan Ürünleri",
+    distinctiveFeature: "Şeker endüstrisi yan ürünüdür; %50-55 şeker içerir, lezzeti sayesinde saman gibi lezzetsiz yemlerin tüketimini artırır ve silaj yapımında katkı olarak kullanılır.",
+    ref: { dryMatter: 75.00, ash: 13.33, fat: 0.30 }
   },
   {
-    id: 24, name: "Mısır gluten unu", mainGroup: "Endüstri Yan Ürünleri",
-    distinctiveFeature: "Nişasta endüstrisi yan ürünü olup protein konsantrasyonu çok yüksek değerli bir protein kaynağıdır.",
-    ref: { dryMatter: 91.50, ash: 2.50, fat: 3.00 }
+    id: 23, name: "Mısır gluten unu", mainGroup: "Endüstri Yan Ürünleri",
+    distinctiveFeature: "Nişasta, embriyo ve kepeğin ayrılmasından sonra elde edilir ve %60 ham protein içerir; proteini lizin ve triptofan bakımından yetersizdir.",
+    ref: { dryMatter: 90.00, ash: 2.22, fat: 2.22 }
   },
   {
-    id: 25, name: "Balık unu", mainGroup: "Hayvansal Kökenli Yemler",
-    distinctiveFeature: "Hayvansal kökenli yem olup protein ve esansiyel amino asitler bakımından zengindir; B12 vitamini içerir.",
-    ref: { dryMatter: 92.00, ash: 14.50, fat: 9.50 }
+    id: 24, name: "Balık unu", mainGroup: "Hayvansal Kökenli Yemler",
+    distinctiveFeature: "Hayvansal protein kaynakları içinde en değerlisidir; proteini lizin, metiyonin, sistin ve triptofanca zengindir, doymamış yağ asitleri nedeniyle acılaşma riski en yüksek yemdir.",
+    ref: { dryMatter: 91.00, ash: 16.48, fat: 10.99 }
+  },
+  {
+    id: 25, name: "Et-kemik unu", mainGroup: "Hayvansal Kökenli Yemler",
+    distinctiveFeature: "Mezbaha yan ürünlerinin rendering işlemiyle işlenmesinden elde edilir; ham külü çok yüksek (%37) olduğundan iyi bir kalsiyum ve fosfor kaynağıdır.",
+    ref: { dryMatter: 92.00, ash: 40.22, fat: 9.24 }
+  },
+  {
+    id: 26, name: "Tüy unu", mainGroup: "Hayvansal Kökenli Yemler",
+    distinctiveFeature: "Kanatlı kesimhane yan ürünlerindendir; tüylerin basınç altında hidrolize edilmesiyle elde edilir, ham proteini çok yüksek olmasına karşın amino asit dengesi zayıftır.",
+    ref: { dryMatter: 93.00, ash: 3.50, fat: 5.00 }
   }
 ];
 
@@ -223,29 +234,6 @@ export function shuffle(list) {
 
 export function getRandomFeeds(count, excludeId = null) {
   return shuffle(FEEDS.filter(f => f.id !== excludeId)).slice(0, count);
-}
-
-export function getFeedImage(feed) {
-  return feed ? feedImagePath(feed) : null;
-}
-
-export function getFeedsWithImages() {
-  return FEEDS.filter(feed => !!feedImagePath(feed));
-}
-
-export function getRandomImageFeed(excludeId = null) {
-  const pool = getFeedsWithImages().filter(f => f.id !== excludeId);
-  return pool[Math.floor(Math.random() * pool.length)] || null;
-}
-
-/**
- * Görseli olan yemlerden rastgele `count` adet döndürür.
- * `includeFeed` verilirse sonuç mutlaka onu içerir ve bir kez yer alır.
- */
-export function getRandomImageFeeds(count, includeFeed = null) {
-  const others = shuffle(getFeedsWithImages().filter(f => !includeFeed || f.id !== includeFeed.id));
-  const result = includeFeed ? [includeFeed, ...others] : others;
-  return result.slice(0, count);
 }
 
 /**

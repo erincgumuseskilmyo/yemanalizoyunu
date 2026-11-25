@@ -336,7 +336,7 @@ export const Lab = {
           key, step: 'm3',
           label: `${def.name}: işlem sonrası tartım (m₃)`,
           disabled: !a.processed,
-          reason: `Önce ${def.deviceName} ile işlemi tamamlayın.`
+          reason: `${def.deviceName} işlemi henüz yapılmadı.`
         });
         continue;
       }
@@ -442,9 +442,10 @@ export const Lab = {
          darasını (m₁) ve kap + numune ağırlığını (m₂) belirleyin.</p>`);
     }
     if (a.processed) {
+      // Sonraki adım söylenmez; sırayı öğrencinin bilmesi gerekir.
       return UI.showEquipment('Kurutma Dolabı',
-        `<p>Numune ${a.procTemp} °C'de ${a.procHours} saat kurutuldu.
-         Sırada <strong>Desikatör</strong>de soğutma var.</p>`);
+        `<p>Numune ${a.procTemp} °C'de ${a.procHours} saat kurutuldu ve
+         etüvden çıkarıldı.</p>`);
     }
 
     UI.showEquipment('Kurutma Dolabı', `
@@ -475,8 +476,8 @@ export const Lab = {
     }
     if (a.processed) {
       return UI.showEquipment('Kül Fırını',
-        `<p>Numune ${a.procTemp} °C'de ${a.procHours} saat yakıldı.
-         Krozeyi <strong>Kroze Maşası</strong> ile alıp <strong>Desikatör</strong>de soğutun.</p>`);
+        `<p>Numune ${a.procTemp} °C'de ${a.procHours} saat yakıldı ve kroze
+         maşasıyla fırından alındı.</p>`);
     }
     if (!UI.hasItem('Kroze Maşası')) {
       return UI.showEquipment('Kül Fırını',

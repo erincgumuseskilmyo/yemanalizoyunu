@@ -77,6 +77,7 @@
     <div id="hud-phase">AŞAMA: HAZIRLIK</div>
     <div id="hud-right">
       <div id="hud-score">PUAN: 0</div>
+      <button id="btn-guide" class="hud-btn hidden" title="Rehber: kontroller ve görevler">REHBER</button>
       <button id="btn-notebook" class="hud-btn hidden" title="Laboratuvar Defteri">DEFTER</button>
       <button id="btn-sound" class="hud-btn" title="Sesi aç/kapat" aria-pressed="true">♪</button>
     </div>
@@ -141,6 +142,46 @@
     </div>
   </div>
 
+  <!-- REHBER: laboratuvar sorumlusu kontrolleri ve görevleri anlatır -->
+  <div id="modal-guide" class="modal hidden">
+    <div class="modal-content guide-box">
+      <!-- Görsel yüklenemezse çerçevesi kendini kaldırır; anlatım metni
+           tek başına da tam okunur kalır. -->
+      <img id="guide-figure" src="assets/ui/rehber.png" alt=""
+           onerror="this.remove()">
+      <div id="guide-text">
+        <h3>Laboratuvara hoş geldin</h3>
+        <p class="guide-lead">Ben laboratuvar sorumlusuyum. Sana burayı
+          tanıtayım — ama analizi <b>sen</b> yapacaksın.</p>
+
+        <h4>Kontroller</h4>
+        <ul class="guide-list">
+          <li><b>W A S D</b> ya da yön tuşlarıyla yürü
+            <span class="guide-dim">(dokunmatikte sol alttaki yön çubuğu)</span></li>
+          <li>Bir cihazın önüne gel, <b>E</b> tuşuna bas ya da cihaza tıkla</li>
+          <li><b>DEFTER</b> düğmesi tartımlarını gösterir</li>
+          <li><b>Esc</b> açık pencereyi kapatır</li>
+        </ul>
+
+        <h4>Burada ne yapacaksın</h4>
+        <ul class="guide-list">
+          <li>Malzeme dolabından analiz için <b>gerekli olanları</b> al</li>
+          <li>Numuneyi öğütücüde hazırla</li>
+          <li>Üç analizi tamamla: <b>kuru madde</b>, <b>ham kül</b>, <b>ham yağ</b></li>
+          <li>Tartımlar deftere yazılır; <b>sonucu sen hesaplayıp</b> gireceksin</li>
+          <li>İşin bitince <b>ANALİZLERİ BİTİR</b> düğmesine bas</li>
+        </ul>
+        <p class="guide-note">Soldaki <b>GÖREVLER</b> panelinden nerede
+          kaldığını takip edebilirsin.</p>
+
+        <p class="guide-warn">Sıcaklık, süre, elek çapı, işlem sırası… bunları
+          sana söylemem; prosedürü bilmen gerekiyor. Yanlış ya da atlanmış her
+          işlem puan kaybettirir.</p>
+      </div>
+      <button id="btn-guide-close" class="btn-primary">ANLADIM, BAŞLAYALIM</button>
+    </div>
+  </div>
+
   <!-- LABORATUVAR DEFTERİ -->
   <div id="modal-notebook" class="modal hidden">
     <div class="modal-content wide">
@@ -176,6 +217,7 @@
   <div class="panel wide-panel">
     <h1>OYUN TAMAMLANDI</h1>
     <div id="final-details"></div>
+    <div id="send-status" class="send-status"></div>
     <div id="photo-credits"></div>
     <button id="btn-copy-result" class="btn-secondary">SONUÇ ÖZETİNİ KOPYALA</button>
     <button id="btn-restart" class="btn-primary">YENİDEN BAŞLA</button>
